@@ -4,7 +4,63 @@ from math import sqrt
 from matplotlib import pyplot as plt
 from copy import deepcopy
 
-Mx,My = np.zeros((3,3)),np.zeros((3,3))
+
+class Progressbar:
+    
+    def __init__(self,title,total,length=60):
+        self.title = title
+        self.total = total
+        self.started = time.time()
+        self.length = length
+    @staticmethod
+    def time_display(second):
+        return time.strftime("%H:%M:%S", time.gmtime(second))
+
+    def pretty_time_display(self):
+        return self.time_display(time.time() - self.started)
+    
+
+    def compute_eta(self,current):
+        elapsed = (time.time() - self.started)
+        total = int((float(self.total)*float(elapsed))/float(current))
+        return total-elapsed
+
+    def update(self,current):
+        current = current + 1 #on va de 0 à total-1 sinon...
+        progress = (float(current)/float(self.total))
+        inner = '#'*int(((progress)*(self.length)))
+        space = ' '*int((self.length-len(inner)))
+       
+        before_padding =' '*(15-len(self.title))
+
+        before_from_padding = ' '*(len(str(self.total))-len(str(current)))
+        before_percent_padding = 1
+
+        if progress < 0.1:
+            before_percent_padding = 2
+
+        if current == self.total:
+            before_percent_padding = 0
+
+        before_percent_padding = ' '*before_percent_padding
+        eta = self.time_display(self.compute_eta(current))
+
+        print("%s%s %s(%d / %d) |%s%s| %s%d%% Durée %s ETA %s" % (
+            self.title,
+            before_padding,
+            before_from_padding,
+            current,
+            self.total,
+            inner,
+            space,
+            before_percent_padding,
+            progress*100,
+            self.pretty_time_display(),
+            eta), end='\r')
+        
+
+Mx,My = np.zeros((3,3)),np.zeros((3,3))    
+
 
 Mx[0][0] = -1
 Mx[0][1] = -2
@@ -14,6 +70,8 @@ Mx[2][1] = 2
 Mx[2][2] = 1
 
 My = Mx.transpose()
+
+
 
 def image_to_array(filename):
     temp = plt.imread(filename)
@@ -49,19 +107,20 @@ def calcul(i,j,tableau,masque):
     
     return somme
 
-def masque(image, mask, multiplier=1):
+def masque(image, mask, multiplier=1, name="Masque"):
     C = np.zeros(image.shape)
     #traitement sur chaque (i,j) de image
     n,m = image.shape
+    bar = Progressbar(name, n)
     for i in range(n):
-        if i%100==0: print("Calcul de la ligne", i)
         for j in range(m):
             if(superposition(i,j,image,mask)):
                 C[i][j] = calcul(i,j,image,mask) #on calcule
             else:
                 C[i][j] = image[i][j]*multiplier #c'est en dehors
             pass
-
+        bar.update(i)
+    print("")
     return C
 
 def gausse(x,y,sigma):
@@ -76,7 +135,7 @@ def bruit(taille, sigma, image):
         for j in range(taille):
             mask[i][j] = gausse(i-t2,j-t2,sigma)
    
-    image = masque(image, mask)
+    image = masque(image, mask, name="Bruit")
     return image
 
 
@@ -84,17 +143,19 @@ def f(x,y):
     return sqrt(x**2 + y**2)
 
 def gradient(image):
-    Gx = masque(image, Mx, 0)
-    Gy = masque(image, My, 0) 
+    Gx = masque(image, Mx, 0, name="Gradient X")
+    Gy = masque(image, My, 0, name="Gradient Y") 
     
     G = np.zeros(Gx.shape)
 
     n,m = Gx.shape
 
+    bar = Progressbar("Gradient", n)
     for i in range(n):
         for j in range(m):
             G[i][j] = f(Gx[i][j], Gy[i][j])
-
+        bar.update(i)
+    print("")
     return (Gx,Gy,G)
 
 def affinage(Gx,Gy,image):
@@ -161,6 +222,7 @@ def seuillage(image, seuil_bas, seuil_haut):
     s21 = []
     n,m = image.shape
     sortie = deepcopy(image)
+    bar1 = Progressbar("Seuillage 1", n)
     for i in range(n):
         for j in range(m):
             if image[i][j] >= seuil_haut: 
@@ -170,22 +232,20 @@ def seuillage(image, seuil_bas, seuil_haut):
             else:
                 s21.append((i,j))
                 temp+=int(voisin(i,j,image))
+        bar1.update(i)
+    
     while temp != 0:
         for i,j in s21:
             blanc = voisin(i,j,image)
             if blanc == True:
                 sortie[i][j] = 1
                 s21.remove((i,j))
-            temp-=1
+                temp-=1
         
     for i,j in s21:
         sortie[i][j] = 0
-
+    print("")
     return sortie
-
-fig,(a1,a2) = plt.subplots(nrows=1, ncols=2)
-a1.set(xlabel="image précédente")
-a2.set(xlabel="image courrante")
 
 
 #Fonction générale pour récupérer une entrée clavier et vérifier qu'elle est valide
@@ -207,16 +267,17 @@ def get(string, f, except_string, default=0, predicate=lambda x: True, additionn
             temp = default
     return temp
 
+
 image1 = get("Image à charger (.png) : ", image_to_array, "Ceci n'est pas une image", default=[])
 taille = get("Taille du masque : ", int, "Veuillez indiquer un nombre", predicate=lambda x: x%2==1, additionnal_string="Veuillez donner un nombre impair")
 sigma = get("Veuillez entrer l'écart-type : ", float, "Veuillez indiquer un nombre", default=0)
 seuil_haut = get("Veuillez entrer le seuil (haut) : ", float, "Veuillez indiquer un nombre", default=0)
 seuil_bas = get("Seuil bas : ", float, "Veuillez indiquer un nombre", default=0, predicate=lambda x: x<seuil_haut, additionnal_string="Veuillez indiquer un seuil inférieur au seuil haut")
-
+print(" ")
 image2 = bruit(taille,sigma,image1)
 Gx,Gy,image3 = gradient(image2)
 image4 = affinage(Gx,Gy,image3)
 image5 = seuillage(image4, seuil_bas, seuil_haut)
 
-plt.imshow(image5, cmap='grey')
+plt.imshow(image5, cmap='gray')
 plt.show()
