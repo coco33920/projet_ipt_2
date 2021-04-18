@@ -188,37 +188,35 @@ a1.set(xlabel="image précédente")
 a2.set(xlabel="image courrante")
 
 
-def get(string, f, except_string, default=0):
+#Fonction générale pour récupérer une entrée clavier et vérifier qu'elle est valide
+#fonction predicate => renvoi TRUE si le résultat peut être gardé, False sinon
+def get(string, f, except_string, default=0, predicate=lambda x: True, additionnal_string=""):
     temp = default
     while(temp == default):
         try:
             temp = input(string)
             temp = f(temp)
+            result = predicate(temp)
+            if(result == False):
+                print(additionnal_string)
+                temp = default
+        except KeyboardInterrupt:
+            exit("Interruption du programme")
         except:
             print(except_string)
             temp = default
     return temp
 
-#image1 = []
-#while(image1 == []):
-#    try:
-#        image = input("Image à charger (.png) : ")
-#        image1 = image_to_array(image)
-#    except:
-#        print("Ceci n'est pas une image")
-#        image1 = []
-
 image1 = get("Image à charger (.png) : ", image_to_array, "Ceci n'est pas une image", default=[])
-
-taille = 0
-while(taille == 0):
-    try:
-        taille = int(input("Taille du masque : "))
-        if(taille%2 == 0):
-            print("Veuillez donner un nombre impair")
-            taille = 0
-    except:
-        print("Veuillez indiquer un nombre")
-        taille = 0
-
+taille = get("Taille du masque : ", int, "Veuillez indiquer un nombre", predicate=lambda x: x%2==1, additionnal_string="Veuillez donner un nombre impair")
 sigma = get("Veuillez entrer l'écart-type : ", float, "Veuillez indiquer un nombre", default=0)
+seuil_haut = get("Veuillez entrer le seuil (haut) : ", float, "Veuillez indiquer un nombre", default=0)
+seuil_bas = get("Seuil bas : ", float, "Veuillez indiquer un nombre", default=0, predicate=lambda x: x<seuil_haut, additionnal_string="Veuillez indiquer un seuil inférieur au seuil haut")
+
+image2 = bruit(taille,sigma,image1)
+Gx,Gy,image3 = gradient(image2)
+image4 = affinage(Gx,Gy,image3)
+image5 = seuillage(image4, seuil_bas, seuil_haut)
+
+plt.imshow(image5, cmap='grey')
+plt.show()
