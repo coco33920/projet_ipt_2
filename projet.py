@@ -16,7 +16,7 @@ Mx[2][2] = 1
 My = Mx.transpose()
 
 def image_to_array(filename):
-    temp = plt.imread(filename + '.png')
+    temp = plt.imread(filename)
     Im = np.zeros(np.shape(temp)[0:2])
     Im = temp[:,:,0]
     return Im
@@ -146,24 +146,79 @@ def affinage(Gx,Gy,image):
                 sortie[i][j] = 0
     return sortie
 
-t = time.time()
+
+def voisin(i,j,image): #renvoi le nombre de voisin blanc du pixel (i,j)
+    for x in range(3): #1
+        for y in range(3): #1
+            if x==y==1: #pour éviter le cas où image[i][j] == 1 si seuil_haut = 1 
+                continue
+            if image[i+(x-1)][j+(y-1)] == 1:
+                return True
+    return False
+
+def seuillage(image, seuil_bas, seuil_haut):
+    temp = 0
+    s21 = []
+    n,m = image.shape
+    sortie = deepcopy(image)
+    for i in range(n):
+        for j in range(m):
+            if image[i][j] >= seuil_haut: 
+                sortie[i][j] = 1
+            elif image[i][j] <= seuil_bas:
+                sortie[i][j] = 0
+            else:
+                s21.append((i,j))
+                temp+=int(voisin(i,j,image))
+    while temp != 0:
+        for i,j in s21:
+            blanc = voisin(i,j,image)
+            if blanc == True:
+                sortie[i][j] = 1
+                s21.remove((i,j))
+            temp-=1
+        
+    for i,j in s21:
+        sortie[i][j] = 0
+
+    return sortie
 
 fig,(a1,a2) = plt.subplots(nrows=1, ncols=2)
-image1 = image_to_array("meme/overlay_2")
-print("Calcul du bruit...")
-
-image2 = bruit(15,2,image1)
+a1.set(xlabel="image précédente")
+a2.set(xlabel="image courrante")
 
 
-t2 = time.time()
-t3 = t2-t
-print("Calcul du bruit en ", t3, " s")
+def get(string, f, except_string, default=0):
+    temp = default
+    while(temp == default):
+        try:
+            temp = input(string)
+            temp = f(temp)
+        except:
+            print(except_string)
+            temp = default
+    return temp
 
-Gx,Gy,image3 = gradient(image2)
-sortie = affinage(Gx,Gy,image3)
+#image1 = []
+#while(image1 == []):
+#    try:
+#        image = input("Image à charger (.png) : ")
+#        image1 = image_to_array(image)
+#    except:
+#        print("Ceci n'est pas une image")
+#        image1 = []
 
+image1 = get("Image à charger (.png) : ", image_to_array, "Ceci n'est pas une image", default=[])
 
-print("Affichage !")
-a1.imshow(image3, cmap="gray")
-a2.imshow(sortie, cmap="gray")
-plt.show()
+taille = 0
+while(taille == 0):
+    try:
+        taille = int(input("Taille du masque : "))
+        if(taille%2 == 0):
+            print("Veuillez donner un nombre impair")
+            taille = 0
+    except:
+        print("Veuillez indiquer un nombre")
+        taille = 0
+
+sigma = get("Veuillez entrer l'écart-type : ", float, "Veuillez indiquer un nombre", default=0)
