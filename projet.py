@@ -1,5 +1,6 @@
 import numpy as np
 import time
+import os
 from math import sqrt
 from matplotlib import pyplot as plt
 from copy import deepcopy
@@ -18,7 +19,7 @@ class Progressbar:
         self.title = title
         self.total = total
         self.started = time.time()
-        self.length = length
+        self.length = self.compute_ideal_length()
         self.char = char
     
     @staticmethod
@@ -35,9 +36,20 @@ class Progressbar:
         total = int((float(self.total)*float(elapsed))/float(current)) #produit en croix
         return total-elapsed #temps restant
 
+    def compute_ideal_length(self):
+        """Compute the ideal length of the bar based on the width of the terminal"""
+        width = os.get_terminal_size()[0] #total width
+        number = len(str(self.total))*2 + 6 #width used by the progress display (XXX/XXX) 
+        title_width = 15 #width of the title
+        end_width = 36 #width used by the XXX% and time elapsed/ETA display and the blank after the |
+        remaining_size = width - (number+title_width+end_width)
+        return remaining_size
+
+
     def update(self,current):
         """Updates the progress of the bar"""
         current = current + 1 #on va de 0 à total-1 sinon...
+        self.length = self.compute_ideal_length() #au cas où l'envie de réduire le terminal vienne à l'idée...
         progress = (float(current)/float(self.total)) #proportion
         inner = self.char*int(((progress)*(self.length))) #nombre de caractère à afficher
         space = ' '*int((self.length-len(inner))) #reste rempli avec des espaces
