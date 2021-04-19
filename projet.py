@@ -272,17 +272,16 @@ def get(string, f, except_string, default=0, predicate=lambda x: True, additionn
     return temp
 
 
-if __name__=="__main__":
-    image1 = get("Image à charger (.png) : ", image_to_array, "Ceci n'est pas une image", default=[])
-    taille = get("Taille du masque : ", int, "Veuillez indiquer un nombre", predicate=lambda x: x%2==1, additionnal_string="Veuillez donner un nombre impair")
-    sigma = get("Veuillez entrer l'écart-type : ", float, "Veuillez indiquer un nombre", default=0)
-    seuil_haut = get("Veuillez entrer le seuil (haut) : ", float, "Veuillez indiquer un nombre", default=0)
-    seuil_bas = get("Seuil bas : ", float, "Veuillez indiquer un nombre", default=0, predicate=lambda x: x<seuil_haut, additionnal_string="Veuillez indiquer un seuil inférieur au seuil haut")
-    print(" ")
-    image2 = bruit(taille,sigma,image1)
-    Gx,Gy,image3 = gradient(image2)
-    image4 = affinage(Gx,Gy,image3)
-    image5 = seuillage(image4, seuil_bas, seuil_haut)
+image1 = get("Image à charger (.png) : ", image_to_array, "Ceci n'est pas une image", default=[])
+taille = get("Taille du masque : ", int, "Veuillez indiquer un nombre", predicate=lambda x: x%2==1, additionnal_string="Veuillez donner un nombre impair")
+sigma = get("Veuillez entrer l'écart-type : ", float, "Veuillez indiquer un nombre", default=0)
+seuil_haut = get("Veuillez entrer le seuil (haut) : ", float, "Veuillez indiquer un nombre", default=0)
+seuil_bas = get("Seuil bas : ", float, "Veuillez indiquer un nombre", default=0, predicate=lambda x: x<seuil_haut, additionnal_string="Veuillez indiquer un seuil inférieur au seuil haut")
+print(" ")
+image2 = bruit(taille,sigma,image1)
+Gx,Gy,image3 = gradient(image2)
+image4 = affinage(Gx,Gy,image3)
+image5 = seuillage(image4, seuil_bas, seuil_haut)
 
-    plt.imshow(image5, cmap='gray')
-    plt.show()
+plt.imshow(image5, cmap='gray')
+plt.show()
