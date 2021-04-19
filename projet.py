@@ -338,3 +338,6 @@ seuil_bas = lambda y: get("Seuil bas : ", float, "Veuillez indiquer un nombre", 
 seuillage_function = [seuil_haut,seuil_bas]
 
 image5 = etape(seuillage, "seuillage", [image4], seuillage_function)
+
+place = get("Où voulez vous l'enregistrer : ", lambda x: x, "Veuillez entrer un string")
+plt.imsave(place+".png", image5, cmap='gray')
