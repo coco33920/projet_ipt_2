@@ -101,16 +101,16 @@ def superposition(i,j,tableau,masque):
     return gauche and droite
 
 def calcul(i,j,tableau,masque):
-    #c i,j = combinaison linéaire du masque et de tableau
-    n,m = tableau.shape
-    p,_ = masque.shape
-    p2 = p//2
     #masque recurrence (0,0)->(p-1,p-1) ==> (i',j') dans tableau
     #liaison une case de masque et une case de tableau
     #(p//2,p//2) masque <--> (i,j) tableau (1)
     #(0,0) masque <--> (i-p//2,j-p//2) tableau (2)
     #(p-1,p-1) masque <--> (i-p//2+p-1, j-p//2+p-1) = (i+p//2,j+p//2)
     #(i',j') masque <--> (i+i'-p//2,j+j'-p//2) tableau
+    
+    n,m = tableau.shape
+    p,_ = masque.shape
+    p2 = p//2
     somme = 0
     for ip in range(p):
         for jp in range(p):
@@ -119,8 +119,8 @@ def calcul(i,j,tableau,masque):
     return somme
 
 def masque(image, mask, multiplier=1, name="Masque",char="#"):
-    C = np.zeros(image.shape)
     #traitement sur chaque (i,j) de image
+    C = np.zeros(image.shape)
     n,m = image.shape
     bar = Progressbar(name, n,char=char)
     for i in range(n):
