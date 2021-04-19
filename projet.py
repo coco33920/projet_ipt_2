@@ -24,9 +24,11 @@ class Progressbar:
     
     @staticmethod
     def time_display(second):
+        """Format time in second with the hours-minute-second format"""
         return time.strftime("%H:%M:%S", time.gmtime(second))
 
     def pretty_time_display(self):
+        """Format time in second from the starting point"""
         return self.time_display(time.time() - self.started)
     
 
@@ -44,7 +46,6 @@ class Progressbar:
         end_width = 36 #width used by the XXX% and time elapsed/ETA display and the blank after the |
         remaining_size = width - (number+title_width+end_width)
         return remaining_size
-
 
     def update(self,current):
         """Updates the progress of the bar"""
@@ -141,7 +142,6 @@ def masque(image, mask, multiplier=1, name="Masque",char="#"):
                 C[i][j] = calcul(i,j,image,mask) #on calcule
             else:
                 C[i][j] = image[i][j]*multiplier #c'est en dehors
-            pass
         bar.update(i)
     print("")
     return C
@@ -184,7 +184,7 @@ def gradient(image):
 def affinage(Gx,Gy,image):
     sortie = deepcopy(image)
     n,m = Gx.shape
-
+    bar = Progressbar("Affinage", n-1)
     for i in range(1,n-1):
         for j in range(1,m-1):
             norme = image[i][j] #norme
@@ -219,8 +219,10 @@ def affinage(Gx,Gy,image):
             else:
                 x,y=1,0 #à droite
 
-            if(image[i+x][j+y] > image[i][j]):
+            if image[i+x][j+y] > image[i][j]:
                 sortie[i][j] = 0
+        bar.update(i)
+    print("")
     return sortie
 
 
@@ -233,12 +235,12 @@ def voisin(i,j,image): #renvoi le nombre de voisin blanc du pixel (i,j)
                 return True
     return False
 
-def seuillage(image, seuil_bas, seuil_haut): #implémente l'algorithme de seuillage
+def seuillage(seuil_haut, seuil_bas,image): #implémente l'algorithme de seuillage
     temp = 0 #nombre de pixel avec un voisin blanc
     s21 = [] #nombre de pixel entre s2 et s1
     n,m = image.shape
     sortie = deepcopy(image) 
-    bar1 = Progressbar("Seuillage 1", n) #déclaration de la progressbar
+    bar1 = Progressbar("Seuillage", n) #déclaration de la progressbar
     for i in range(n):
         for j in range(m):
             if image[i][j] >= seuil_haut: 
@@ -268,32 +270,71 @@ def seuillage(image, seuil_bas, seuil_haut): #implémente l'algorithme de seuill
 #fonction predicate => renvoi TRUE si le résultat peut être gardé, False sinon
 def get(string, f, except_string, default=0, predicate=lambda x: True, additionnal_string=""):
     temp = default
-    while(temp == default):
+    while temp == default:
         try:
-            temp = input(string)
-            temp = f(temp)
-            result = predicate(temp)
-            if(result == False):
-                print(additionnal_string)
+            temp = input(string) #on prend l'entrée
+            temp = f(temp) #on applique la fonction de traitement dessus
+            result = predicate(temp) #on vérifie qu'elle est valide avec le prédicat donné
+            if result == False: #si elle est invalide on reboucle
+                print(additionnal_string) 
                 temp = default
-        except KeyboardInterrupt:
+        except KeyboardInterrupt: #pour pouvoir sortir du programme avec CTRL + C
             exit("Interruption du programme")
-        except:
+        except: #si on a un soucis on reboucle
             print(except_string)
             temp = default
     return temp
 
-if __name__ == "__main__":
-    image1 = get("Image à charger (.png) : ", image_to_array, "Ceci n'est pas une image", default=[])
-    taille = get("Taille du masque : ", int, "Veuillez indiquer un nombre", predicate=lambda x: x%2==1, additionnal_string="Veuillez donner un nombre impair")
-    sigma = get("Veuillez entrer l'écart-type : ", float, "Veuillez indiquer un nombre", default=0)
-    seuil_haut = get("Veuillez entrer le seuil (haut) : ", float, "Veuillez indiquer un nombre", default=0)
-    seuil_bas = get("Seuil bas : ", float, "Veuillez indiquer un nombre", default=0, predicate=lambda x: x<seuil_haut, additionnal_string="Veuillez indiquer un seuil inférieur au seuil haut")
-    print(" ")  
-    image2 = bruit(taille,sigma,image1)
-    Gx,Gy,image3 = gradient(image2)
-    image4 = affinage(Gx,Gy,image3)
-    image5 = seuillage(image4, seuil_bas, seuil_haut)
+def get_phrase(count):
+    if count < 5:
+        return "Êtes-vous satisfait.e ? (O/N) : "
+    elif count < 7:
+        return "T'as pas encore fini???? (O/N) : "
+    elif count < 10:
+        return "Sérieusement..... : "
+    else:
+        return "Je vais envoyer Ô Grand Lapinou vous chercher.... "
 
-    plt.imshow(image5, cmap='gray')
-    plt.show()
+#Fonction générale pour éviter de répéter la même chose dans les étapes => continue tant que "O" n'est pas donné
+#Pour les fonction demandant des arguments supplémentaire la liste des fonction à appliquer est en paramètre
+def etape(traitement,out, arguments, additional_args_functions = []):
+    count = 0
+    while True:
+        args = []        
+        for f in additional_args_functions:
+            try:
+                args.append(f()) #pour la majorité des fonction elles n'ont pas d'argument
+            except TypeError: 
+                args.append(f(args[-1])) #si elles en ont un => seuil_bas => on met le dernier argument en date (seuil_haut)
+            
+        argument = args + arguments #on ajoute les arguments dans l'ordre (image à la fin)
+        sortie = traitement(*argument)
+        
+        image = sortie
+        if isinstance(sortie, tuple): #si la sortie est un tuple => gradient => l'image est le 3eme element
+            image = sortie[2]
+
+
+        plt.imsave("result/"+out+".png",image,cmap='gray') #on sauvegarde l'image
+        a = input(get_phrase(count)) #on demande si l'utilisateur.ice est satisfait.e
+        if a == "O":
+            print(" ") 
+            return sortie #si oui on renvoi la sortie du traitement
+        count += 1
+
+image1 = get("Image à charger (.png) : ", image_to_array, "Ceci n'est pas une image", default=[])
+print(" ")
+
+taille = lambda: get("Taille du masque : ", int, "Veuillez indiquer un nombre", predicate=lambda x: x%2==1, additionnal_string="Veuillez donner un nombre impair")
+ecart_type = lambda: get("Ecart Type : ", float, "Veuillez indiquer un nombre")
+bruit_functions = [taille,ecart_type]
+image2 = etape(bruit, "bruit", [image1], bruit_functions)
+
+Gx,Gy,image3 = etape(gradient, "gradient", [image2])
+image4 = etape(affinage, "affinage", [Gx,Gy,image3])
+
+seuil_haut = lambda: get("Seuil haut : ", float, "Veuillez indiquer un nombre", predicate=lambda x: x >= 0 and x <= 1, additionnal_string="Veuille entrer un nombre entre 0 et 1")
+seuil_bas = lambda y: get("Seuil bas : ", float, "Veuillez indiquer un nombre", predicate=lambda x: x >= 0 and x < y, additionnal_string="Veuille entrer un nombre entre 0 et "+str(y))
+seuillage_function = [seuil_haut,seuil_bas]
+
+image5 = etape(seuillage, "seuillage", [image4], seuillage_function)
