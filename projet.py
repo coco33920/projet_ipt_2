@@ -5,13 +5,22 @@ from matplotlib import pyplot as plt
 from copy import deepcopy
 
 
-class Progressbar:
-    
-    def __init__(self,title,total,length=60):
+class Progressbar: 
+    """ 
+        Simple class to emulate progress bar in standard out
+        @params: 
+            title: name of the progress bar (displayed first)
+            total: number of jobs to be executed
+            length: default 60, length of the progress bar
+            char: default '#' character used to display the progress
+    """
+    def __init__(self,title,total,length=60,char="#"):
         self.title = title
         self.total = total
         self.started = time.time()
         self.length = length
+        self.char = char
+    
     @staticmethod
     def time_display(second):
         return time.strftime("%H:%M:%S", time.gmtime(second))
@@ -21,39 +30,41 @@ class Progressbar:
     
 
     def compute_eta(self,current):
+        """Compute the ETA to finish the jobs based on the current time and progress"""
         elapsed = (time.time() - self.started)
-        total = int((float(self.total)*float(elapsed))/float(current))
-        return total-elapsed
+        total = int((float(self.total)*float(elapsed))/float(current)) #produit en croix
+        return total-elapsed #temps restant
 
     def update(self,current):
+        """Updates the progress of the bar"""
         current = current + 1 #on va de 0 à total-1 sinon...
-        progress = (float(current)/float(self.total))
-        inner = '#'*int(((progress)*(self.length)))
-        space = ' '*int((self.length-len(inner)))
+        progress = (float(current)/float(self.total)) #proportion
+        inner = self.char*int(((progress)*(self.length))) #nombre de caractère à afficher
+        space = ' '*int((self.length-len(inner))) #reste rempli avec des espaces
        
-        before_padding =' '*(15-len(self.title))
+        title_padding =' '*(15-len(self.title)) #padding après le titre pour rester aligner
 
-        before_from_padding = ' '*(len(str(self.total))-len(str(current)))
-        before_percent_padding = 1
+        progress_padding = ' '*(len(str(self.total))-len(str(current))) #padding avant le nombre pour rester aligner quand on passe de 0 à 10 à 100 etc.
+        percent_padding = 1 #padding avant le pourcentage
 
         if progress < 0.1:
-            before_percent_padding = 2
+            percent_padding = 2
 
         if current == self.total:
-            before_percent_padding = 0
+            percent_padding = 0
 
-        before_percent_padding = ' '*before_percent_padding
+        percent_padding = ' '*percent_padding
         eta = self.time_display(self.compute_eta(current))
 
         print("%s%s %s(%d / %d) |%s%s| %s%d%% Durée %s ETA %s" % (
             self.title,
-            before_padding,
-            before_from_padding,
+            title_padding,
+            progress_padding,
             current,
             self.total,
             inner,
             space,
-            before_percent_padding,
+            percent_padding,
             progress*100,
             self.pretty_time_display(),
             eta), end='\r')
@@ -107,11 +118,11 @@ def calcul(i,j,tableau,masque):
     
     return somme
 
-def masque(image, mask, multiplier=1, name="Masque"):
+def masque(image, mask, multiplier=1, name="Masque",char="#"):
     C = np.zeros(image.shape)
     #traitement sur chaque (i,j) de image
     n,m = image.shape
-    bar = Progressbar(name, n)
+    bar = Progressbar(name, n,char=char)
     for i in range(n):
         for j in range(m):
             if(superposition(i,j,image,mask)):
@@ -170,14 +181,7 @@ def affinage(Gx,Gy,image):
             vecteur = np.array([Gx[i][j], Gy[i][j]]) #vecteur gradient
             vecteur_normalise = (1/norme) * vecteur #normalisation du vecteur
             alpha = np.arctan2(vecteur[1],vecteur[0]) #angle € [-pi,pi]
-            #carré 1 => -pi/8 à pi/8
-            #carré 2 => pi/8 à 3pi/8
-            #carré 3 => 3pi/8 à 5pi/8
-            #carré 4 => 5pi/8 à 7pi/8
-            #carré 5 => 7pi/8 à -7pi/8
-            #carré 6 => -7pi/8 à -5pi/8
-            #carré 7 => -5pi/8 à -3pi/8
-            #carré 8 => -3pi/8 à -pi/8
+
             x,y = 1,0
             appart = lambda min, max: alpha >= min and alpha < max
             appart2 = lambda max, min: alpha >= min and alpha < max
@@ -217,33 +221,33 @@ def voisin(i,j,image): #renvoi le nombre de voisin blanc du pixel (i,j)
                 return True
     return False
 
-def seuillage(image, seuil_bas, seuil_haut):
-    temp = 0
-    s21 = []
+def seuillage(image, seuil_bas, seuil_haut): #implémente l'algorithme de seuillage
+    temp = 0 #nombre de pixel avec un voisin blanc
+    s21 = [] #nombre de pixel entre s2 et s1
     n,m = image.shape
-    sortie = deepcopy(image)
-    bar1 = Progressbar("Seuillage 1", n)
+    sortie = deepcopy(image) 
+    bar1 = Progressbar("Seuillage 1", n) #déclaration de la progressbar
     for i in range(n):
         for j in range(m):
             if image[i][j] >= seuil_haut: 
-                sortie[i][j] = 1
-            elif image[i][j] <= seuil_bas:
-                sortie[i][j] = 0
+                sortie[i][j] = 1 #on met à blanc si on dépasse le seuil haut
+            elif image[i][j] <= seuil_bas: 
+                sortie[i][j] = 0 #on met à noir si on est en dessous
             else:
                 s21.append((i,j))
-                temp+=int(voisin(i,j,image))
+                temp+=int(voisin(i,j,image)) #on update temp si le pixel est entre s2 et s1
         bar1.update(i)
     
     while temp != 0:
         for i,j in s21:
-            blanc = voisin(i,j,image)
+            blanc = voisin(i,j,image) #on vérifie si le pixel a un voisin blanc
             if blanc == True:
                 sortie[i][j] = 1
                 s21.remove((i,j))
                 temp-=1
         
     for i,j in s21:
-        sortie[i][j] = 0
+        sortie[i][j] = 0 #on met le reste à 0
     print("")
     return sortie
 
@@ -268,16 +272,17 @@ def get(string, f, except_string, default=0, predicate=lambda x: True, additionn
     return temp
 
 
-image1 = get("Image à charger (.png) : ", image_to_array, "Ceci n'est pas une image", default=[])
-taille = get("Taille du masque : ", int, "Veuillez indiquer un nombre", predicate=lambda x: x%2==1, additionnal_string="Veuillez donner un nombre impair")
-sigma = get("Veuillez entrer l'écart-type : ", float, "Veuillez indiquer un nombre", default=0)
-seuil_haut = get("Veuillez entrer le seuil (haut) : ", float, "Veuillez indiquer un nombre", default=0)
-seuil_bas = get("Seuil bas : ", float, "Veuillez indiquer un nombre", default=0, predicate=lambda x: x<seuil_haut, additionnal_string="Veuillez indiquer un seuil inférieur au seuil haut")
-print(" ")
-image2 = bruit(taille,sigma,image1)
-Gx,Gy,image3 = gradient(image2)
-image4 = affinage(Gx,Gy,image3)
-image5 = seuillage(image4, seuil_bas, seuil_haut)
+if __name__=="__main__":
+    image1 = get("Image à charger (.png) : ", image_to_array, "Ceci n'est pas une image", default=[])
+    taille = get("Taille du masque : ", int, "Veuillez indiquer un nombre", predicate=lambda x: x%2==1, additionnal_string="Veuillez donner un nombre impair")
+    sigma = get("Veuillez entrer l'écart-type : ", float, "Veuillez indiquer un nombre", default=0)
+    seuil_haut = get("Veuillez entrer le seuil (haut) : ", float, "Veuillez indiquer un nombre", default=0)
+    seuil_bas = get("Seuil bas : ", float, "Veuillez indiquer un nombre", default=0, predicate=lambda x: x<seuil_haut, additionnal_string="Veuillez indiquer un seuil inférieur au seuil haut")
+    print(" ")
+    image2 = bruit(taille,sigma,image1)
+    Gx,Gy,image3 = gradient(image2)
+    image4 = affinage(Gx,Gy,image3)
+    image5 = seuillage(image4, seuil_bas, seuil_haut)
 
-plt.imshow(image5, cmap='gray')
-plt.show()
+    plt.imshow(image5, cmap='gray')
+    plt.show()
