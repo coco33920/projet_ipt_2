@@ -4,6 +4,15 @@ import os
 from math import sqrt
 from matplotlib import pyplot as plt
 from copy import deepcopy
+try:
+    import readline #historique des commandes, gestion des flèches
+except:
+    pass #il est possible que python ne contienne pas le module readline
+
+
+###Architecture du code: lignes 11 à 93, classe progressbar pour les barre de progression
+##                       lignes 96 à 106, annexe au projet
+##                       lignes 107 à 356, projet
 
 
 class Progressbar: 
@@ -83,6 +92,19 @@ class Progressbar:
             eta), end='\r')
         
 
+#Easter egg
+def get_phrase(count):
+    if count < 5:
+        return "Êtes-vous satisfait.e ? (O/N) : "
+    elif count < 7:
+        return "T'as pas encore fini???? (O/N) : "
+    elif count < 10:
+        return "Sérieusement..... : "
+    else:
+        return "Je vais envoyer Ô Grand Lapinou vous chercher.... "
+
+
+####PROJET
 Mx,My = np.zeros((3,3)),np.zeros((3,3))    
 
 
@@ -284,16 +306,6 @@ def get(string, f, except_string, default=0, predicate=lambda x: True, additionn
             print(except_string)
             temp = default
     return temp
-
-def get_phrase(count):
-    if count < 5:
-        return "Êtes-vous satisfait.e ? (O/N) : "
-    elif count < 7:
-        return "T'as pas encore fini???? (O/N) : "
-    elif count < 10:
-        return "Sérieusement..... : "
-    else:
-        return "Je vais envoyer Ô Grand Lapinou vous chercher.... "
 
 #Fonction générale pour éviter de répéter la même chose dans les étapes => continue tant que "O" n'est pas donné
 #Pour les fonction demandant des arguments supplémentaire la liste des fonction à appliquer est en paramètre
