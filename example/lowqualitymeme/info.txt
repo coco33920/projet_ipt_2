@@ -1,0 +1,5 @@
+- Paramètres -
+taille: 15
+ecart type: 2
+seuil haut: 0.15
+seuil bas: 0.08
