@@ -327,7 +327,7 @@ def etape(traitement,out, arguments, additional_args_functions = []):
             image = sortie[2]
 
 
-        plt.imsave("example/sip/"+out+".png",image,cmap='gray') #on sauvegarde l'image
+        plt.imsave("result/"+out+".png",image,cmap='gray') #on sauvegarde l'image
         a = input(get_phrase(count)) #on demande si l'utilisateur.ice est satisfait.e
         if a == "O":
             print(" ") 
