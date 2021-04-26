@@ -94,14 +94,12 @@ class Progressbar:
 
 #Easter egg
 def get_phrase(count):
-    if count < 5:
+    if count < 3:
         return "Êtes-vous satisfait.e ? (O/N) : "
-    elif count < 7:
-        return "T'as pas encore fini???? (O/N) : "
-    elif count < 10:
-        return "Sérieusement..... : "
+    elif count < 5:
+        return "Vous avez pas encore fini???? (O/N) : "
     else:
-        return "Je vais envoyer Ô Grand Lapinou vous chercher.... "
+        return "Sérieusement..... : "
 
 
 ####PROJET
