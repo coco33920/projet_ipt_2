@@ -139,8 +139,7 @@ def calcul(i,j,tableau,masque):
     #(p//2,p//2) masque <--> (i,j) tableau (1)
     #(0,0) masque <--> (i-p//2,j-p//2) tableau (2)
     #(p-1,p-1) masque <--> (i-p//2+p-1, j-p//2+p-1) = (i+p//2,j+p//2)
-    #(i',j') masque <--> (i+i'-p//2,j+j'-p//2) tableau
-    
+    #(i',j') masque <--> (i+i'-p//2,j+j'-p//2) tableau    
     n,m = tableau.shape
     p,_ = masque.shape
     p2 = p//2

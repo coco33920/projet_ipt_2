@@ -3,3 +3,10 @@ __pycache__/
 final/
 result/
 meme/
+*.out
+*.aux
+*.log
+*.fdb*
+*.fls
+*.sync*
+*.toc
